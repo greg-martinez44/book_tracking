@@ -4,3 +4,4 @@ build/
 *.pyc
 *.csv
 *.db
+.ipynb_checkpoints/
