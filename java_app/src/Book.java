@@ -8,6 +8,10 @@ class Book {
     private Format format;
     private Genre genre;
     private String source;
+
+    // These should be in a different object...
+    // Something like a BookRecord object rather
+    // than the book object.
     private String dateStarted;
     private String dateFinished;
 
