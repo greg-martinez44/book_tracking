@@ -7,3 +7,4 @@ build/
 *.db
 .ipynb_checkpoints/
 *.class
+journals/
