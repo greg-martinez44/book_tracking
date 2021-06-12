@@ -6,3 +6,4 @@ build/
 *.csv
 *.db
 .ipynb_checkpoints/
+*.class
