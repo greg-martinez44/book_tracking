@@ -61,4 +61,18 @@ public class BookData {
             System.out.println();
         }
     }
+
+    public void disconnectFromDatabase() {
+        if (connectedToDatabase) {
+            try {
+                resultSet.close();
+                statement.close();
+                connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            } finally {
+                connectedToDatabase = false;
+            }
+        }
+    }
 }
