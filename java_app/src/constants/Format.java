@@ -1,3 +1,5 @@
+package base.constants;
+
 public enum Format {
     HARDCOVER,
     PAPERBACK,

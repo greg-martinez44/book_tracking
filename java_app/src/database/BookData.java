@@ -1,73 +1,90 @@
 package database;
 
+import base.*;
 import java.sql.*;
+import java.util.*;
 
 public class BookData {
 
-    private final String CONN_URL = "jdbc:mysql://localhost:3306/Library";
-    private final Connection conn;
-    private final Statement statement;
+    private final String CONN_URL = "jdbc:mysql://localhost:3306/Library?zeroDateTimeBehavior=convertToNull";
+    private final String USERNAME = "jbooks";
+    private final String PASSWORD = "jbooks";
 
-    private ResultSet resultSet;
-    private ResultSetMetaData metaData;
+    private final Connection conn;
+    private PreparedStatement insertNewBook;
+    private PreparedStatement selectAllBooks;
 
     private boolean connectedToDatabase = false;
 
-    public BookData(String query) throws SQLException {
-        conn = DriverManager.getConnection(CONN_URL, "jbooks", "jbooks");
-        statement = conn.createStatement();
+    public BookData() throws SQLException {
+        conn = DriverManager.getConnection(CONN_URL, USERNAME, PASSWORD);
+        insertNewBook = conn.prepareStatement(
+                "INSERT INTO fullrecords "
+                + "(title, author, started, imprint, publishing_house,"
+                + "year, pages, duration, format, source, other_authors, f_nf,"
+                + "price, genre, narrator, illustrator, translator)"
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,  ?, ?, ?, ?)"
+                );
+        selectAllBooks = conn.prepareStatement(
+                "SELECT * FROM fullrecords ORDER BY started"
+                );
         connectedToDatabase = true;
-        setQuery(query);
     }
 
-    public int getColumnCount() throws IllegalStateException {
-        if (!connectedToDatabase) {
-            throw new IllegalStateException("Not connected to the database");
-        }
-        try {
-            return metaData.getColumnCount();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
-    }
-
-    public void printTitles() throws SQLException {
-        String query = "Select title from fullrecords";
-        resultSet = statement.executeQuery(query);
-        while (resultSet.next()) {
-            System.out.println(resultSet.getString("title"));
-        }
-    }
-
-    public void setQuery(String query) throws IllegalStateException {
-        if (!connectedToDatabase) {
-            throw new IllegalStateException("Not connected to database");
-        }
-        try {
-            resultSet = statement.executeQuery(query);
-            metaData  = resultSet.getMetaData();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void printResults() throws SQLException {
-        int columns = getColumnCount();
-        while (resultSet.next()) {
-            for (int i = 1; i <= columns; i++) {
-                System.out.printf("%-8s\t", resultSet.getObject(i));
+    public List<Book> getAllBooks() {
+        try (ResultSet resultSet = selectAllBooks.executeQuery()) {
+            List<Book> results = new ArrayList<Book>();
+            while (resultSet.next()) {
+                Book book = new Book(
+                    resultSet.getString("title"),
+                    resultSet.getString("author"),
+                    resultSet.getInt("pages"),
+                    resultSet.getInt("pubYear"),
+                    resultSet.getDouble("price"),
+                    resultSet.getString("format"),
+                    resultSet.getString("genre"),
+                    resultSet.getString("source"),
+                    resultSet.getString("imprint"),
+                    resultSet.getString("publishing_house"),
+                    resultSet.getString("f_nf"),
+                    resultSet.getString("started"),
+                    resultSet.getString("finished")
+                );
+                results.add(book);
             }
-            System.out.println();
+            return results;
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
+        return null;
+    }
+
+    public void insertBook(Book book) throws SQLException {
+        insertNewBook.setString(1, book.getTitle());
+        insertNewBook.setString(2, book.getAuthorName());
+        insertNewBook.setString(3, book.getDateStarted());
+        insertNewBook.setString(4, book.getImprint());
+        insertNewBook.setString(5, book.getPublishingHouse());
+        insertNewBook.setString(6, book.getPubYear().toString());
+        insertNewBook.setString(7, book.getPages().toString());
+        insertNewBook.setString(8, null);
+        insertNewBook.setString(9, book.getFormat());
+        insertNewBook.setString(10, book.getSource());
+        insertNewBook.setString(11, null);
+        insertNewBook.setString(12, book.getFictionOrNonFiction());
+        insertNewBook.setString(13, book.getPrice().toString());
+        insertNewBook.setString(14, book.getGenre().toString());
+        insertNewBook.setString(15, null);
+        insertNewBook.setString(16, null);
+        insertNewBook.setString(17, null);
+
+        insertNewBook.executeUpdate();
     }
 
     public void disconnectFromDatabase() {
         if (connectedToDatabase) {
             try {
-                resultSet.close();
-                statement.close();
-                connection.close();
+                conn.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             } finally {

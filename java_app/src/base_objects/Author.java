@@ -1,4 +1,6 @@
-class Author {
+package base;
+
+public class Author {
     private String name;
 
     public Author(String name) {

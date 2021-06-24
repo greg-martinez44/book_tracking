@@ -1,6 +1,8 @@
+package base;
+
 import java.util.ArrayList;
 
-class Publisher {
+public class Publisher {
     private String publisherName;
     private ArrayList<String> imprints = new ArrayList<>();
 

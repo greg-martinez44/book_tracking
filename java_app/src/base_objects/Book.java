@@ -1,4 +1,8 @@
-class Book {
+package base;
+
+import base.constants.*;
+
+public class Book {
 
     private String title;
     private Author author;
@@ -8,6 +12,9 @@ class Book {
     private Format format;
     private Genre genre;
     private String source;
+    private String imprint;
+    private String publishingHouse;
+    private String fictionOrNonFiction;
 
     // These should be in a different object...
     // Something like a BookRecord object rather
@@ -21,6 +28,52 @@ class Book {
         this.genre = Genre.GENERIC;
     }
 
+    public Book(
+            String title,
+            String author,
+            Integer pages,
+            Integer pubYear,
+            Double price,
+            String format,
+            String genre,
+            String source,
+            String imprint,
+            String publishingHouse,
+            String fictionOrNonFiction,
+            String dateStarted,
+            String dateFinished
+            )
+    {
+        this.title = title;
+        this.author = new Author(author);
+        this.pages = pages;
+        this.pubYear = pubYear;
+        this.price = price;
+        this.source = source;
+        this.imprint = imprint;
+        this.publishingHouse = publishingHouse;
+        this.fictionOrNonFiction = fictionOrNonFiction;
+
+        this.genre = Genre.GENERIC;
+        for (Genre enumeratedGenre : Genre.values()) {
+            String nextGenre = enumeratedGenre.toString().toLowerCase();
+            genre = genre.toLowerCase();
+            if (nextGenre.equals(genre)) {
+                this.genre = enumeratedGenre;
+                break;
+            }
+        }
+        this.format = Format.HARDCOVER;
+        for (Format enumeratedFormat : Format.values()) {
+            String nextFormat = enumeratedFormat.toString().toLowerCase();
+            format = format.toLowerCase();
+            if (nextFormat.equals(format)) {
+                this.format = enumeratedFormat;
+                break;
+            }
+        }
+
+    }
     // Getters
     public String getTitle() {
         return this.title;
@@ -60,6 +113,18 @@ class Book {
 
     public String getSource() {
         return this.source;
+    }
+
+    public String getImprint() {
+        return this.imprint;
+    }
+
+    public String getPublishingHouse() {
+        return this.publishingHouse;
+    }
+
+    public String getFictionOrNonFiction() {
+        return this.fictionOrNonFiction;
     }
 
     // Setters
@@ -111,5 +176,17 @@ class Book {
 
     public void setSource(String source) {
         this.source = source;
+    }
+
+    public void setImprint(String imprint) {
+        this.imprint = imprint;
+    }
+
+    public void setPublishingHouse(String publishingHouse) {
+        this.publishingHouse = publishingHouse;
+    }
+
+    public void setFictionOrNonFiction(String fictionOrNonFiction) {
+        this.fictionOrNonFiction = fictionOrNonFiction;
     }
 }
