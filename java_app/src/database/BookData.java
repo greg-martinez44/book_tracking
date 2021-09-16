@@ -13,20 +13,39 @@ public class BookData {
     private final Connection conn;
     private PreparedStatement insertNewBook;
     private PreparedStatement selectAllBooks;
+    private PreparedStatement bookToUpdate;
 
     private boolean connectedToDatabase = false;
 
     public BookData() throws SQLException {
         conn = DriverManager.getConnection(CONN_URL, USERNAME, PASSWORD);
-        insertNewBook = conn.prepareStatement(
-                "INSERT INTO fullrecords "
-                + "(title, author, started, imprint, publishing_house,"
-                + "year, pages, duration, format, source, other_authors, f_nf,"
-                + "price, genre, narrator, illustrator, translator)"
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,  ?, ?, ?, ?)"
+
+        bookToUpdate = conn.prepareStatement(
+                "SELECT b.book_id FROM books b "
+                + "inner join authors a on b.author_id = a.author_id"
+                + "where b.title = ? and a.author = ?"
                 );
+
+        insertNewBook = conn.prepareStatement(
+                "INSERT INTO books "
+                + "(title, pages, duration, year, format, genre, "
+                + "imprint_id, author_id, translator_id, narrator_id, illustrator_id)"
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                );
+
         selectAllBooks = conn.prepareStatement(
-                "SELECT * FROM fullrecords ORDER BY started"
+                "SELECT b.title, a.author, s.started, rc.finished, b.pages, b.duration, "
+                + "rc.rating, b.year, b.format, b.genre, pub.imprint, src.source, src.price, t.translator, "
+                + "n.narrator, i.illustrator "
+                + "FROM books b "
+                + "INNER JOIN authors a on b.author_id = a.author_id "
+                + "INNER JOIN publishers pub on b.imprint_id = pub.imprint_id "
+                + "LEFT JOIN purchases src on b.book_id = src.book_id "
+                + "LEFT JOIN starts s on b.book_id = s.book_id "
+                + "LEFT JOIN completed_reads rc on rc.book_id = b.book_id "
+                + "LEFT JOIN translators t on b.translator_id = t.translator_id "
+                + "LEFT JOIN narrators n on b.narrator_id = n.narrator_id "
+                + "LEFT JOIN illustrators i on b.illustrator_id = i.illustrator_id"
                 );
         connectedToDatabase = true;
     }
@@ -39,14 +58,12 @@ public class BookData {
                     resultSet.getString("title"),
                     resultSet.getString("author"),
                     resultSet.getInt("pages"),
-                    resultSet.getInt("pubYear"),
+                    resultSet.getInt("year"),
                     resultSet.getDouble("price"),
                     resultSet.getString("format"),
                     resultSet.getString("genre"),
                     resultSet.getString("source"),
                     resultSet.getString("imprint"),
-                    resultSet.getString("publishing_house"),
-                    resultSet.getString("f_nf"),
                     resultSet.getString("started"),
                     resultSet.getString("finished")
                 );

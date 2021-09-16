@@ -13,6 +13,9 @@ sklearn = "*"
 statsmodels = "*"
 seaborn = "*"
 jupyterlab = "*"
+mysql = "*"
+scikit-learn = "*"
+pytest = "*"
 
 [dev-packages]
 

@@ -6,5 +6,6 @@ public enum Format {
     GN,
     TEXTBOOK,
     EBOOK,
-    AUDIOBOOK
+    AUDIO,
+    MMPB
 }

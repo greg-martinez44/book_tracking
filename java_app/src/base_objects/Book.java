@@ -25,7 +25,7 @@ public class Book {
     public Book(String title, String author) {
         this.title = title;
         this.author = new Author(author);
-        this.genre = Genre.GENERIC;
+        this.genre = Genre.GENERAL_FICTION;
     }
 
     public Book(
@@ -38,8 +38,6 @@ public class Book {
             String genre,
             String source,
             String imprint,
-            String publishingHouse,
-            String fictionOrNonFiction,
             String dateStarted,
             String dateFinished
             )
@@ -51,10 +49,8 @@ public class Book {
         this.price = price;
         this.source = source;
         this.imprint = imprint;
-        this.publishingHouse = publishingHouse;
-        this.fictionOrNonFiction = fictionOrNonFiction;
 
-        this.genre = Genre.GENERIC;
+        this.genre = Genre.GENERAL_FICTION;
         for (Genre enumeratedGenre : Genre.values()) {
             String nextGenre = enumeratedGenre.toString().toLowerCase();
             genre = genre.toLowerCase();
