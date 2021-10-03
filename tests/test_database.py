@@ -4,9 +4,13 @@ from src.Database import Database
 
 @pytest.fixture
 def db():
-    db = Database()
-    yield db
-    db.close()
+    with Database() as db:
+        yield db
+
+@pytest.fixture
+def db_test():
+    with Database(test=True) as db:
+        yield db
 
 def test_connection(db):
     assert True
@@ -136,7 +140,7 @@ def test_new_books_are_added_to_books_table(test_book_table, db):
     assert expected_imprint_id == actual_imprint_id
     assert expected_author_id == actual_author_id
 
-def test_add_books_fails_if_no_author(test_book_table, db):
+def test_add_books_fails_if_no_author(test_book_table, db_test):
     book_data = {
         "title": "testbook_1",
         "pages": 4,
@@ -146,9 +150,9 @@ def test_add_books_fails_if_no_author(test_book_table, db):
         "imprint": "Tor",
     }
     with pytest.raises(ValueError, match="Must include author"):
-        db.add_book(table="test_books", **book_data)
+        db_test.add_book(table="books", **book_data)
 
-def test_add_books_fails_if_no_imprint(test_book_table, db):
+def test_add_books_fails_if_no_imprint(test_book_table, db_test):
     book_data = {
         "title": "testbook_1",
         "pages": 4,
@@ -158,7 +162,7 @@ def test_add_books_fails_if_no_imprint(test_book_table, db):
         "author": "Brandon Sanderson"
     }
     with pytest.raises(ValueError, match="Must include imprint"):
-        db.add_book(table="test_books", **book_data)
+        db_test.add_book(table="books", **book_data)
 
 def test_new_books_are_added_to_books_table_with_optional_columns(test_book_table, db):
     book_data = {
@@ -202,8 +206,7 @@ def test_live_test_delete_after_running_once(db):
     }
     db.add_book(**book_data)
 
-# @pytest.mark.skip
-def test_make_new_values_in_parent_table(test_book_table, db):
+def test_make_new_values_in_parent_table(test_book_table, db_test):
     book_data = {
         "title": "testbook_1",
         "pages": 4,
@@ -213,8 +216,8 @@ def test_make_new_values_in_parent_table(test_book_table, db):
         "imprint": "testimprint_1",
         "author": "testauthor_1"
     }
-    db.add_book(table="test_books", test=True, **book_data)
-    df = pd.read_sql("select * from test_books", db.cnx)
+    db_test.add_book(**book_data)
+    df = pd.read_sql("select * from test_books", db_test.cnx)
 
     expected_author_id = 1
     expected_imprint_id = 1
@@ -226,3 +229,47 @@ def test_make_new_values_in_parent_table(test_book_table, db):
     assert expected_imprint_id == actual_imprint_id
 
 
+def test_multiple_authors_added_to_author_table(test_book_table, db_test):
+    book_data = {
+        "title": "testbook_1",
+        "pages": 4,
+        "year": 3032,
+        "format": "hardcover",
+        "genre": "fiction",
+        "imprint": "testimprint_1",
+        "author": "testauthor_1",
+        "other_authors": "test_other_authors"
+    }
+    db_test.add_book(table="books", **book_data)
+    df = pd.read_sql("select * from test_authors", db_test.cnx)
+
+    expected_author_id = 1
+
+    actual_author_id = df["author_id"].values
+    actual_other_authors = df["other_authors"].values
+
+    assert expected_author_id == actual_author_id
+    assert "test_other_authors" == actual_other_authors
+
+def test_imprint_and_publishing_house_added_to_publisher_table(test_book_table, db_test):
+    book_data = {
+        "title": "testbook_1",
+        "pages": 4,
+        "year": 3032,
+        "format": "hardcover",
+        "genre": "fiction",
+        "imprint": "testimprint_1",
+        "publishing_house": "NewHouse",
+        "author": "testauthor_1",
+        "other_authors": "test_other_authors"
+    }
+    db_test.add_book(table="books", **book_data)
+    df = pd.read_sql("select * from test_publishers", db_test.cnx)
+
+    expected_imprint_id = 1
+
+    actual_imprint_id = df["imprint_id"].values
+    actual_publishing_house = df["publishing_house"].values
+
+    assert expected_imprint_id == actual_imprint_id
+    assert "NewHouse" == actual_publishing_house

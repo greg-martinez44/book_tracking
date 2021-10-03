@@ -22,12 +22,19 @@ class Database:
         "test_publishers": ["imprint", "publishing_house"]
     }
 
-    def __init__(self):
+    def __init__(self, test=False):
         if Database.IS_CONNECTED:
             raise ValueError("Database already connected")
+        self.test = test
+
+    def __enter__(self):
         self.cnx = mysql.connector.connect(**Database.CONFIG)
         self.cursor = self.cnx.cursor(buffered=True)
         Database.IS_CONNECTED = True
+        return self
+
+    def __exit__(self, *args):
+        self.close()
 
     def custom_query(self, query):
         return pd.read_sql(query, self.cnx)
@@ -126,38 +133,36 @@ class Database:
         """
         return pd.read_sql(query, self.cnx)
 
-    def add_book(self, table="books", test=False, **kwargs):
+    def add_book(self, table="books", **kwargs):
         if not kwargs.get("author"):
             raise ValueError("Must include author")
         if not kwargs.get("imprint"):
             raise ValueError("Must include imprint")
 
+        if self.test:
+            table = f"test_{table}"
+
         imprint_id = self.get_id(
             "publishers",
             kwargs.get("imprint"),
-            kwargs.get("publishing_house"),
-            test=test
+            kwargs.get("publishing_house")
         )
         author_id = self.get_id(
             "authors",
             kwargs.get("author"),
-            kwargs.get("other_authors"),
-            test=test
+            kwargs.get("other_authors")
         )
         translator_id = self.get_id(
             "translators",
-            kwargs.get("translator"),
-            test=test
+            kwargs.get("translator")
         )
         narrator_id = self.get_id(
             "narrators",
-            kwargs.get("narrator"),
-            test=test
+            kwargs.get("narrator")
         )
         illustrator_id = self.get_id(
             "illustrators",
-            kwargs.get("illustrator"),
-            test=test
+            kwargs.get("illustrator")
         )
 
         insert_query = f"""
@@ -197,32 +202,37 @@ class Database:
         self.cnx.close()
         Database.IS_CONNECTED = False
 
-    def get_id(self, table, name, *args, test=False):
+    def get_id(self, table, name, *args):
         if not name:
             return None
-        if test:
+        if self.test and not table.startswith("test"):
             table = f"test_{table}"
+
         column = Database.QUERY_CONFIG[table]
+        where = f"{column} = '{name}'"
+
         if table in ('authors', 'publishers', 'test_authors', 'test_publishers'):
-            column = column[0]
+            column, column2 = column
+            where = f"{column} = '{name}'"
+            if args[0] is not None:
+                where = where + f" AND {column2} = '{args[0]}'"
+
         self.cursor.execute(
-            f"""
-            SELECT {column}_id
-            FROM {table}
-            WHERE {column} = '{name}'
-            """
+            f"SELECT {column}_id from {table} WHERE {where}"
         )
         if self.cursor.rowcount == 0:
             self.add_id(table, name, *args)
-            return self.get_id(table, name)
+            return self.get_id(table, name, *args)
         return self.cursor.fetchone()[0]
 
     def add_id(self, table, name, *args):
         columns = Database.QUERY_CONFIG[table]
         values = "%s"
+
         if table in ('authors', 'publishers', 'test_authors', 'test_publishers'):
             values = ", ".join(["%s"]*len(columns))
             columns = ", ".join(columns)
+
         insert_query = f"""
         INSERT INTO {table} (
             {columns}
