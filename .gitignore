@@ -8,3 +8,4 @@ build/
 .ipynb_checkpoints/
 *.class
 journals/
+**to_ignore/
