@@ -9,3 +9,4 @@ build/
 *.class
 journals/
 **to_ignore/
+**src/config.py
