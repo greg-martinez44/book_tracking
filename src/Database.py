@@ -1,10 +1,12 @@
 import pandas as pd
 import mysql.connector
 
+from .config import MYSQL_PASS
+
 class Database:
     CONFIG = {
         'user': 'jbooks',
-        'password': 'jbooks',
+        'password': MYSQL_PASS,
         'host': '127.0.0.1',
         'database': 'Library',
         'raise_on_warnings': True
@@ -120,16 +122,10 @@ class Database:
             b.title,
             p.source,
             p.price,
-            p.purchase_date,
-            s.started,
-            cr.finished
+            p.purchase_date
         FROM purchases p
         INNER JOIN books b
-        ON p.book_id = p.book_id
-        LEFT JOIN starts
-        ON p.book_id = s.book_id
-        LEFT JOIN completed_reads cr
-        ON p.book_id = cr.book_id
+        ON p.book_id = b.book_id
         """
         return pd.read_sql(query, self.cnx)
 
