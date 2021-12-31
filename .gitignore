@@ -10,3 +10,4 @@ build/
 journals/
 **to_ignore/
 **src/config.py
+*.sh
