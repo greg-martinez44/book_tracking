@@ -11,3 +11,4 @@ journals/
 **to_ignore/
 **src/config.py
 *.sh
+book_data.py
