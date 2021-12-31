@@ -1,22 +1,15 @@
 import pandas as pd
 import pytest
-from src.Database import Database
-
-@pytest.fixture
-def db():
-    with Database() as db:
-        yield db
+from BooksSQL import Database
+import BooksSQL.common_queries as cq
 
 @pytest.fixture
 def db_test():
     with Database(test=True) as db:
         yield db
 
-def test_connection(db):
-    assert True
-
-def test_all_books_query(db):
-    df = db.all_books()
+def test_all_books_query():
+    df = cq.all_books()
     expected_columns = [
         "title",
         "pages",
@@ -34,8 +27,8 @@ def test_all_books_query(db):
     actual_columns = df.columns.tolist()
     assert set(expected_columns) == set(actual_columns)
 
-def test_completed_books_query(db):
-    df = db.completed_books()
+def test_completed_books_query():
+    df = cq.completed_books()
     expected_columns = [
         "book_id",
         "title",
@@ -57,8 +50,8 @@ def test_completed_books_query(db):
     actual_columns = df.columns.tolist()
     assert set(expected_columns)  == set(actual_columns)
 
-def test_completed_books_calculates_datepart_correctly(db):
-    df = db.completed_books()
+def test_completed_books_calculates_datepart_correctly():
+    df = cq.completed_books()
     expected_month_names = [
         "January",
         "February",
@@ -86,16 +79,16 @@ def test_completed_books_calculates_datepart_correctly(db):
     for year in expected_year_values:
         assert year in actual_year_values
 
-def test_days_to_read_is_not_negative(db):
-    df = db.completed_books()
+def test_days_to_read_is_not_negative():
+    df = cq.completed_books()
     df["days_to_finish"].fillna(float("inf"), inplace=True)
     actual_days_to_finish = df["days_to_finish"].unique().tolist()
 
     for value in actual_days_to_finish:
         assert value > 0
 
-def test_f_nf_tags_correct_rows(db):
-    df = db.completed_books()
+def test_f_nf_tags_correct_rows():
+    df = cq.completed_books()
     expected_genres = [
         "horror",
         "fantasy",
@@ -113,7 +106,7 @@ def test_f_nf_tags_correct_rows(db):
         else:
             assert row["f_nf"] == "nf"
 
-def test_new_books_are_added_to_books_table(test_book_table, db):
+def test_new_books_are_added_to_books_table(test_book_table, db_test):
     book_data = {
         "title": "testbook_1",
         "pages": 4,
@@ -121,24 +114,46 @@ def test_new_books_are_added_to_books_table(test_book_table, db):
         "format": "hardcover",
         "genre": "fiction",
         "imprint": "Tor",
-        "author": "Brandon Sanderson"
+        "author": "Brandon Sanderson",
+        "source": "bookstore",
+        "price": 0,
+        "purchase_date": "2021-12-30",
     }
-    db.add_book(table="test_books", **book_data)
-    df = pd.read_sql("select * from test_books", db.cnx)
+    db_test.add_book(**book_data)
+
+    test_query = f"""
+    select *
+    from test_books
+    where title = 'testbook_1'
+    """
+    df = pd.read_sql(test_query, db_test.cnx)
+
+    test_query_purchases = f"""
+    select *
+    from test_purchases
+    where source = 'bookstore'
+    """
+    df_purchases = pd.read_sql(test_query_purchases, db_test.cnx)
 
     expected_title = "testbook_1"
     expected_imprint_id = 15
     expected_author_id = 64
+    expected_price = 0
+    expected_purchase_date = '2021-12-30'
 
     actual_title = df["title"].values
     actual_imprint_id = df["imprint_id"].values
     actual_author_id = df["author_id"].values
+    actual_price = df_purchases["price"].values
+    actual_purchase_date = df_purchases['purchase_date'].values
 
     assert df["duration"].isna().all()
     assert df["translator_id"].isna().all()
     assert expected_title == actual_title
     assert expected_imprint_id == actual_imprint_id
     assert expected_author_id == actual_author_id
+    assert expected_price == actual_price
+    assert expected_purchase_date == actual_purchase_date
 
 def test_add_books_fails_if_no_author(test_book_table, db_test):
     book_data = {
@@ -148,9 +163,12 @@ def test_add_books_fails_if_no_author(test_book_table, db_test):
         "format": "hardcover",
         "genre": "fiction",
         "imprint": "Tor",
+        "source": "bookstore",
+        "price": 0,
+        "purchase_date": "2021-12-30",
     }
     with pytest.raises(ValueError, match="Must include author"):
-        db_test.add_book(table="books", **book_data)
+        db_test.add_book(**book_data)
 
 def test_add_books_fails_if_no_imprint(test_book_table, db_test):
     book_data = {
@@ -159,12 +177,15 @@ def test_add_books_fails_if_no_imprint(test_book_table, db_test):
         "year": 3032,
         "format": "hardcover",
         "genre": "fiction",
-        "author": "Brandon Sanderson"
+        "author": "Brandon Sanderson",
+        "source": "bookstore",
+        "price": 0,
+        "purchase_date": "2021-12-30",
     }
     with pytest.raises(ValueError, match="Must include imprint"):
-        db_test.add_book(table="books", **book_data)
+        db_test.add_book(**book_data)
 
-def test_new_books_are_added_to_books_table_with_optional_columns(test_book_table, db):
+def test_new_books_are_added_to_books_table_with_optional_columns(test_book_table, db_test):
     book_data = {
         "title": "testbook_1",
         "pages": 4,
@@ -175,10 +196,13 @@ def test_new_books_are_added_to_books_table_with_optional_columns(test_book_tabl
         "author": "Brandon Sanderson",
         "translator": "John Werry",
         "narrator": "Barack Obama",
-        "illustrator": "Keiichi Arawi"
+        "illustrator": "Keiichi Arawi",
+        "source": "bookstore",
+        "price": 0,
+        "purchase_date": "2021-12-30",
     }
-    db.add_book(table="test_books", **book_data)
-    df = pd.read_sql("select * from test_books", db.cnx)
+    db_test.add_book(**book_data)
+    df = pd.read_sql("select * from test_books where title = 'testbook_1'", db_test.cnx)
 
     expected_translator_id = 6
     expected_narrator_id = 8
@@ -214,13 +238,16 @@ def test_make_new_values_in_parent_table(test_book_table, db_test):
         "format": "hardcover",
         "genre": "fiction",
         "imprint": "testimprint_1",
-        "author": "testauthor_1"
+        "author": "testauthor_1",
+        "source": "bookstore",
+        "price": 0,
+        "purchase_date": "2021-12-30",
     }
     db_test.add_book(**book_data)
-    df = pd.read_sql("select * from test_books", db_test.cnx)
+    df = pd.read_sql("select * from test_books where title = 'testbook_1'", db_test.cnx)
 
-    expected_author_id = 1
-    expected_imprint_id = 1
+    expected_author_id = 0
+    expected_imprint_id = 0
 
     actual_author_id = df["author_id"].values
     actual_imprint_id = df["imprint_id"].values
@@ -238,12 +265,15 @@ def test_multiple_authors_added_to_author_table(test_book_table, db_test):
         "genre": "fiction",
         "imprint": "testimprint_1",
         "author": "testauthor_1",
-        "other_authors": "test_other_authors"
+        "other_authors": "test_other_authors",
+        "source": "bookstore",
+        "price": 0,
+        "purchase_date": "2021-12-30",
     }
-    db_test.add_book(table="books", **book_data)
-    df = pd.read_sql("select * from test_authors", db_test.cnx)
+    db_test.add_book(**book_data)
+    df = pd.read_sql("select * from test_authors where author = 'testauthor_1'", db_test.cnx)
 
-    expected_author_id = 1
+    expected_author_id = 0
 
     actual_author_id = df["author_id"].values
     actual_other_authors = df["other_authors"].values
@@ -261,12 +291,15 @@ def test_imprint_and_publishing_house_added_to_publisher_table(test_book_table, 
         "imprint": "testimprint_1",
         "publishing_house": "NewHouse",
         "author": "testauthor_1",
-        "other_authors": "test_other_authors"
+        "other_authors": "test_other_authors",
+        "source": "bookstore",
+        "price": 0,
+        "purchase_date": "2021-12-30",
     }
-    db_test.add_book(table="books", **book_data)
-    df = pd.read_sql("select * from test_publishers", db_test.cnx)
+    db_test.add_book(**book_data)
+    df = pd.read_sql("select * from test_publishers where imprint = 'testimprint_1'", db_test.cnx)
 
-    expected_imprint_id = 1
+    expected_imprint_id = 0
 
     actual_imprint_id = df["imprint_id"].values
     actual_publishing_house = df["publishing_house"].values

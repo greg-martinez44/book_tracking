@@ -20,123 +20,45 @@ class Database:
         "translators": "translator",
         "narrators": "narrator",
         "illustrators": "illustrator",
+        "test_books": "title",
         "test_authors": ["author", "other_authors"],
-        "test_publishers": ["imprint", "publishing_house"]
+        "test_publishers": ["imprint", "publishing_house"],
+        "test_translators": "translator",
+        "test_narrators": "narrator",
+        "test_illustrators": "illustrator",
     }
 
     def __init__(self, test=False):
         if Database.IS_CONNECTED:
             raise ValueError("Database already connected")
+        Database.IS_CONNECTED = True
         self.test = test
-
-    def __enter__(self):
         self.cnx = mysql.connector.connect(**Database.CONFIG)
         self.cursor = self.cnx.cursor(buffered=True)
-        Database.IS_CONNECTED = True
+
+    def __enter__(self):
         return self
 
     def __exit__(self, *args):
         self.close()
 
-    def custom_query(self, query):
+    def query(self, query):
         return pd.read_sql(query, self.cnx)
 
-    def all_books(self):
-        query = """
-        SELECT
-            b.title,
-            b.pages,
-            b.duration,
-            b.year,
-            b.format,
-            b.genre,
-            pub.imprint,
-            a.author,
-            a.other_authors,
-            t.translator,
-            n.narrator,
-            i.illustrator
-        FROM books b
-        LEFT JOIN authors a
-        ON b.author_id = a.author_id
-        LEFT JOIN publishers pub
-        ON b.imprint_id = pub.imprint_id
-        LEFT JOIN narrators n
-        ON b.narrator_id = n.narrator_id
-        LEFT JOIN translators t
-        ON b.translator_id = t.translator_id
-        LEFT JOIN illustrators i
-        ON b.illustrator_id = i.illustrator_id
-        """
-        return pd.read_sql(
-            query,
-            self.cnx
-        )
-
-    def completed_books(self):
-        query = """
-        SELECT
-            b.book_id,
-            b.title,
-            b.genre,
-            b.pages,
-            b.duration,
-            b.format,
-            b.year,
-            cr.started,
-            cr.finished,
-            cr.rating,
-            pur.source,
-            pub.imprint,
-            CASE
-                WHEN genre IN (
-                    'horror',
-                    'fantasy',
-                    'general fiction',
-                    'comedy',
-                    'sci-fi',
-                    'poems',
-                    'romance',
-                    'young adult',
-                    'mystery'
-                ) THEN 'f'
-                ELSE 'nf'
-            END 'f_nf',
-            YEAR(cr.finished) 'year_read',
-            MONTHNAME(cr.finished) 'month_read',
-            DATEDIFF(cr.finished, cr.started) + 1 'days_to_finish'
-        FROM books b
-        INNER JOIN completed_reads cr
-        ON b.book_id = cr.book_id
-        LEFT JOIN publishers pub
-        ON pub.imprint_id = b.imprint_id
-        LEFT JOIN purchases pur
-        ON pur.book_id = b.book_id
-        """
-        return pd.read_sql(query, self.cnx)
-
-    def all_purchases(self):
-        query = """
-        SELECT
-            p.book_id,
-            b.title,
-            p.source,
-            p.price,
-            p.purchase_date
-        FROM purchases p
-        INNER JOIN books b
-        ON p.book_id = b.book_id
-        """
-        return pd.read_sql(query, self.cnx)
-
-    def add_book(self, table="books", **kwargs):
-        if not kwargs.get("author"):
-            raise ValueError("Must include author")
-        if not kwargs.get("imprint"):
-            raise ValueError("Must include imprint")
+    def add_book(self, table="books", purchase_table='purchases', **kwargs):
+        for required_data in [
+            "author",
+            "imprint",
+            "source",
+            "price",
+            "purchase_date",
+        ]:
+            if kwargs.get(required_data) is None:
+                raise ValueError(f"Must include {required_data}")
 
         if self.test:
             table = f"test_{table}"
+            purchase_table = "test_purchases"
 
         imprint_id = self.get_id(
             "publishers",
@@ -161,7 +83,7 @@ class Database:
             kwargs.get("illustrator")
         )
 
-        insert_query = f"""
+        book_insert_query = f"""
         INSERT INTO {table} (
             title,
             pages,
@@ -177,7 +99,7 @@ class Database:
         )
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        values = (
+        book_values = (
             kwargs.get("title"),
             kwargs.get("pages"),
             kwargs.get("duration"),
@@ -190,7 +112,29 @@ class Database:
             narrator_id,
             illustrator_id
         )
-        self.cursor.execute(insert_query, values)
+
+        self.insert_query(book_insert_query, book_values)
+
+        book_id = self.get_book_id(**kwargs)
+        purchases_insert_query = f"""
+        insert into {purchase_table} (
+            book_id,
+            source,
+            price,
+            purchase_date
+        )
+        values (%s, %s, %s, %s)
+        """
+        purchases_values = (
+            book_id,
+            kwargs.get("source"),
+            kwargs.get("price"),
+            kwargs.get("purchase_date")
+        )
+        self.insert_query(purchases_insert_query, purchases_values)
+
+    def insert_query(self, query, values):
+        self.cursor.execute(query, values)
         self.cnx.commit()
 
     def close(self):
@@ -237,6 +181,32 @@ class Database:
         """
         self.cursor.execute(insert_query, (name, *args))
         self.cnx.commit()
+
+    def get_book_id(self, **kwargs):
+        table = 'books'
+        if self.test and not table.startswith("test"):
+            table = f"test_books"
+
+        where_clause = []
+        for column, value in kwargs.items():
+            if column in [
+                'title',
+                'pages',
+                'duration',
+                'year',
+                'format',
+                'genre'
+            ]:
+                where_clause.append(f"{column} = '{value}'")
+        where_clause = " and ".join(where_clause)
+        query = f"""
+        select book_id
+        from {table}
+        where {where_clause}
+        """
+
+        self.cursor.execute(query)
+        return self.cursor.fetchone()[0]
 
 if __name__ == "__main__":
     db = Database()
