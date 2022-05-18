@@ -47,15 +47,15 @@ def completed_books():
         pur.source,
         pub.imprint,
         CASE
-            WHEN genre IN (
+            WHEN b.genre IN (
                 'horror',
                 'fantasy',
-                'general fiction',
+                'general_fiction',
                 'comedy',
-                'sci-fi',
+                'sci_fi',
                 'poems',
                 'romance',
-                'young adult',
+                'young_adult',
                 'mystery'
             ) THEN 'f'
             ELSE 'nf'
@@ -87,6 +87,7 @@ def all_purchases():
     INNER JOIN books b
     ON p.book_id = b.book_id
     """
+    query = "select * from v_completed_read_stats"
     with Database() as db:
         return db.query(query)
 
@@ -103,3 +104,6 @@ def unfinished_reads():
     """
     with Database() as db:
         return db.query(query)
+
+def test_thing():
+    return "wowwow"
