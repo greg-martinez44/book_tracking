@@ -12,7 +12,7 @@ journals/
 **src/config.py
 *.sh
 book_data.py
-java_book_logger/.DS_Store
-java_book_logger/externals/
-java_book_logger/.vscode/
-java_book_logger/target/
+**java_book_logger/.DS_Store
+**java_book_logger/externals/
+**java_book_logger/.vscode/
+**java_book_logger/target/
