@@ -13,7 +13,7 @@ public class CompletedRead extends BookDBObject {
         this.readId = setIntegerVariable(completedReadData.get("read_id"));
         this.bookId = setIntegerVariable(completedReadData.get("book_id"));
         this.started = setVariable(completedReadData.get("started"));
-        this.finished = setVariable(completedReadData.get("finsihed"));
+        this.finished = setVariable(completedReadData.get("finished"));
         this.rating = setIntegerVariable(completedReadData.get("rating"));
 
     }
