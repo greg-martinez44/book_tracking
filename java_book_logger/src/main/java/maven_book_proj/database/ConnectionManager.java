@@ -16,6 +16,7 @@ class ConnectionManager {
             put("translators", false);
             put("completed_reads", false);
             put("started_reads", false);
+            put("reviews", false);
         }
     };
 

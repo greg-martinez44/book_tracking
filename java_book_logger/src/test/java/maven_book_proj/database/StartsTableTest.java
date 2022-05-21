@@ -114,6 +114,14 @@ public class StartsTableTest implements CommonTests {
     void testInsertedStartedReadHasAddedToReadEqualsZero() throws SQLException {
         Integer bookId = 99999;
         Integer startId = this.startsTable.getTableId(bookId);
+        if (startId == 0 || startId == null) {
+            String started = "2022-05-06";
+            HashMap<String, String> startedReadParams = new HashMap<>();
+            startedReadParams.put("book_id", bookId.toString());
+            startedReadParams.put("started", started);
+            StartedRead startedRead = new StartedRead(startedReadParams);
+            this.startsTable.insertRecord(startedRead);
+        }
         StartedRead startedRead = this.startsTable.getRecord(startId);
         Integer expectedResult = 0;
         Integer actualResult = startedRead.getAddedToReads();
