@@ -27,9 +27,11 @@ def main():
         if YEAR is None:
             books_over_time(completed_books, pdf)
             pages_over_time(completed_books, pdf)
+            purchases_over_time(purchases, pdf)
         book_length_hist(completed_books, pdf)
         books_by_season(completed_books, pdf)
         pages_by_season(completed_books, pdf)
+        purchases_by_season(purchases, pdf)
 
 
 def get_data_tables(year):
@@ -38,6 +40,7 @@ def get_data_tables(year):
     all_purchases = cq.all_purchases()
 
     all_purchases['purchase_date'] = pd.to_datetime(all_purchases['purchase_date'])
+    all_purchases['year_purchased'] = all_purchases['year_purchased'].astype('Int32')
     completed_books['started'] = pd.to_datetime(completed_books['started'])
     completed_books['finished'] = pd.to_datetime(completed_books['finished'])
     completed_books = completed_books[(completed_books['finished'].dt.year >= 2015)].copy()
@@ -51,12 +54,16 @@ def get_data_tables(year):
 def books_over_time(df, pdf, ax=None):
     books_over_time = format_grouped_by_date(df, "title", "count")
     plot_over_time(books_over_time, 'title', ax)
-
     save_pdf(pdf)
 
 def pages_over_time(df, pdf, ax=None):
     pages_over_time = format_grouped_by_date(df, "pages", "mean")
     plot_over_time(pages_over_time, 'pages', ax)
+    save_pdf(pdf)
+
+def purchases_over_time(df, pdf, ax=None):
+    purchases_over_time = format_grouped_by_date(df, "price", "sum")
+    plot_over_time(purchases_over_time, "price", ax)
     save_pdf(pdf)
 
 def book_length_hist(df, pdf, ax=None):
@@ -91,6 +98,12 @@ def pages_by_season(df, pdf, ax=None):
     page_seasons = make_seasons_table(df)[['pages', 'season']]
     counts_by_season = page_seasons.groupby('season')['pages'].mean().reset_index()
     plot_over_seasons(counts_by_season, 'pages', ax)
+    save_pdf(pdf)
+
+def purchases_by_season(df, pdf, ax=None):
+    purchase_seasons = make_seasons_table(df)[['price', 'season']]
+    counts_by_season = purchase_seasons.groupby('season')['price'].sum().reset_index()
+    plot_over_seasons(counts_by_season, 'price', ax)
     save_pdf(pdf)
 
 def plot_over_seasons(df, col, ax):
@@ -132,7 +145,8 @@ def format_grouped_by_date(df, col, estimator):
     methods = {
         "count": pd.Series.count,
         "mean": pd.Series.mean,
-        "max": pd.Series.max
+        "max": pd.Series.max,
+        "sum": pd.Series.sum,
     }
     return (
         add_timeline(df)[[col, 'timeline']]
@@ -150,7 +164,12 @@ def add_timeline(df):
         "November 2019",
         "November 2017"
     ]
-    keys = df_timeline['month_read'] + ' ' + df_timeline['year_read'].astype('str')
+
+    try:
+        keys = df_timeline['month_read'] + ' ' + df_timeline['year_read'].astype('str')
+    except KeyError:
+        keys = df_timeline['month_purchased'] + ' ' + df_timeline['year_purchased'].astype('str')
+
     df_timeline['timeline'] = pd.Categorical(
         keys,
         [key for key in timeline if key in np.append(keys.values, missing)],
@@ -185,14 +204,19 @@ def make_seasons_table(df):
     fall = ['September', 'October', 'November']
     winter = ['December', 'January', 'February']
 
-    book_seasons = df.copy()
+    season_table = df.copy()
+    try:
+        season_table.loc[season_table["finished"].dt.month_name().isin(spring), "season"] = "spring"
+        season_table.loc[season_table["finished"].dt.month_name().isin(summer), "season"] = "summer"
+        season_table.loc[season_table["finished"].dt.month_name().isin(fall), "season"] = "fall"
+        season_table.loc[season_table["finished"].dt.month_name().isin(winter), "season"] = "winter"
+    except KeyError:
+        season_table.loc[season_table['purchase_date'].dt.month_name().isin(spring), "season"] = "spring"
+        season_table.loc[season_table['purchase_date'].dt.month_name().isin(summer), "season"] = "summer"
+        season_table.loc[season_table['purchase_date'].dt.month_name().isin(fall), "season"] = "fall"
+        season_table.loc[season_table['purchase_date'].dt.month_name().isin(winter), "season"] = "winter"
 
-    book_seasons.loc[book_seasons["finished"].dt.month_name().isin(spring), "season"] = "spring"
-    book_seasons.loc[book_seasons["finished"].dt.month_name().isin(summer), "season"] = "summer"
-    book_seasons.loc[book_seasons["finished"].dt.month_name().isin(fall), "season"] = "fall"
-    book_seasons.loc[book_seasons["finished"].dt.month_name().isin(winter), "season"] = "winter"
-
-    return book_seasons
+    return season_table
 
 def format_titles(col):
     if col == 'pages':
@@ -201,6 +225,9 @@ def format_titles(col):
     elif col == 'title':
         aggregator = 'Number'
         col_label = col.title() + 's'
+    elif col == 'price':
+        aggregator = 'Total'
+        col_label = 'Purchases'
     else:
         aggregator = ""
         col_label = ""
