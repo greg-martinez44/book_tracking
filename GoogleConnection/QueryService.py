@@ -10,15 +10,18 @@ class queryService:
         self.conn = google_connection or gc.GoogleConnection.googleConnection()
         self.sheet_id = sheet_id
 
-    def query_sheet(self):
+    @classmethod
+    def query_sheet(cls, sheet_name="", sheet_id='1zE89OFtETLOf8LFwYjcMrG0kRZ4I8WnSIgDgFT5nMbE', google_connection=None):
+        conn = google_connection or gc.GoogleConnection.googleConnection()
+        range = f"{sheet_name}!{queryService.FULL_SHEET_RANGE}"
         try:
-            service = self.conn.get_service()
+            service = conn.get_service()
 
             # Call the Sheets API
             sheet = service.spreadsheets()
 
-            result = sheet.values().get(spreadsheetId=self.sheet_id,
-                                        range=queryService.FULL_SHEET_RANGE).execute()
+            result = sheet.values().get(spreadsheetId=sheet_id,
+                                        range=range).execute()
             values = result.get('values', [])
 
             if not values:
