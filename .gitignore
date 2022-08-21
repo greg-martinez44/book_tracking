@@ -24,3 +24,4 @@ etc/
 Include/
 Scripts/
 share/
+GoogleConnection/resources/*
