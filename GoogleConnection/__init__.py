@@ -1,0 +1,2 @@
+from GoogleConnection import GoogleConnection
+from GoogleConnection import QueryService
