@@ -19,3 +19,9 @@ book_data.py
 **java_book_logger/target/
 **sql_scripts/*
 **sql_scripts/procedures/
+Lib/
+etc/
+Include/
+Scripts/
+share/
+GoogleConnection/resources/*
