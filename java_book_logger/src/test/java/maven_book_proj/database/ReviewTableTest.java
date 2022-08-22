@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.sql.SQLException;
 import java.util.List;
-import java.util.HashMap;
 
 public class ReviewTableTest implements CommonTests {
 

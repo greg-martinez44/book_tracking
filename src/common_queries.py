@@ -48,3 +48,10 @@ def unfinished_reads():
     """
     with Database() as db:
         return db.query(query)
+
+def started_reads():
+    query = """
+    select * from v_started_read_stats
+    """
+    with Database() as db:
+        return db.query(query)
