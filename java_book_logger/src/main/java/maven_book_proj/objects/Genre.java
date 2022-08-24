@@ -25,5 +25,7 @@ public enum Genre {
     YOUNG_ADULT,
     JOURNAL,
     AUTOBIOGRAPHY,
-    ANTHOLOGY
+    ANTHOLOGY,
+    PLAY,
+    BIOGRAPHY
 }

@@ -121,4 +121,21 @@ public class PurchaseTableTest implements CommonTests {
         Integer actualResult = this.purchaseTable.getTableId(bookId);
         assertEquals(expectedResult, actualResult);
     }
+
+    @Test
+    public void testInsertPurchaseWithApostropheInSource() throws SQLException {
+        HashMap<String, String> purchaseParams = new HashMap<>();
+        purchaseParams.put("book_id", "1010101");
+        purchaseParams.put("source", "new source's with apostrophe");
+        purchaseParams.put("price", "9.99");
+        purchaseParams.put("purchase_date", "2022-05-04");
+        Purchase purchase = new Purchase(purchaseParams);
+        this.purchaseTable.insertRecord(purchase);
+        Integer bookId = 1010101;
+        Purchase purchaseData = this.purchaseTable.getRecord(bookId);
+        String expectedResult = "new source's with apostrophe";
+        String actualResult = purchaseData.getSource();
+        assertEquals(expectedResult, actualResult);
+
+    }
 }
