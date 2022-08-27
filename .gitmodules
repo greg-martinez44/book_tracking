@@ -1,3 +1,6 @@
 [submodule "gpysheets"]
 	path = gpysheets
 	url = git@github.com:greg-martinez44/gpysheets.git
+[submodule "python_mysql_connector"]
+	path = python_mysql_connector
+	url = git@github.com:greg-martinez44/python_mysql_connector.git
