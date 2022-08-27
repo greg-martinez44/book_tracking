@@ -21,3 +21,4 @@ Include/
 Scripts/
 share/
 GoogleConnection/resources/*
+**venv/*
