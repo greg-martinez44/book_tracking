@@ -1,0 +1,3 @@
+[submodule "gpysheets"]
+	path = gpysheets
+	url = git@github.com:greg-martinez44/gpysheets.git
