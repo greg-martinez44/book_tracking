@@ -1,14 +1,13 @@
 import pandas as pd
+from python_mysql_connector.python_mysql_connector import Database
+from gpysheets.gpysheets.QuerySheet import QuerySheet
 
-
-def mysql_connection(view_name):
-    from python_mysql_connector.python_mysql_connector import Database
+def mysql_connection(view_name: str) -> pd.DataFrame:
     with Database() as db:
         return db.query(f"select * from {view_name}")
 
 
-def google_connection(sheet_id, sheet_name):
-    from gpysheets.gpysheets.QuerySheet import QuerySheet
+def google_connection(sheet_id: str, sheet_name:str) -> pd.DataFrame:
     query_result = QuerySheet.query_sheet(sheet_id, sheet_name)
     return pd.DataFrame(query_result["data"], columns=query_result["columns"])
 
