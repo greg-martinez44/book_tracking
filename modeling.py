@@ -111,5 +111,8 @@ class Model:
         plt.legend(loc=3)
 
     def books_over_time(self, ax:Any=None, show=bool, pdf:PdfPages=None) -> None:
+        """This probably needs to be made to look more like the one in the notebook to make
+        sure it shows correctly.
+        """
         books_over_time = self.__format_grouped_by_date(df, "title", "count")
         self.__plot_over_time(books_over_time, 'title', ax)
