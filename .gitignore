@@ -4,6 +4,7 @@
 dist/
 build/
 *.pyc
+**/__pycache__/
 *.csv
 *.db
 .ipynb_checkpoints/
